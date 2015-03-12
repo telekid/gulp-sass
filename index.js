@@ -36,7 +36,7 @@ module.exports = function (options) {
       opts.includePaths = [fileDir];
     }
 
-    opts.success = function (obj) {
+    function renderSuccess(obj) {
       if (typeof opts.onSuccess === 'function') opts.onSuccess(obj);
 
       if (obj.map && typeof obj.map === 'string') {
@@ -61,9 +61,9 @@ module.exports = function (options) {
       }
 
       handleOutput(obj, file, cb);
-    };
+    }
 
-    opts.error = function (err) {
+    function renderError(err) {
       if (opts.errLogToConsole) {
         gutil.log('[gulp-sass] ' + err.message + ' on line ' + err.line + ' in ' + err.file);
         return cb();
@@ -78,18 +78,26 @@ module.exports = function (options) {
       err.fileName = err.file;
 
       return cb(new gutil.PluginError('gulp-sass', err));
-    };
+    }
+
+    function renderCb(err, obj) {
+        if (err) {
+          renderError(err);
+        } else {
+          renderSuccess(obj);
+        }
+    }
 
     if ( opts.sync ) {
       try {
         var output = nodeSass.renderSync(opts);
-        opts.success(output);
+        renderSuccess(output);
         handleOutput(output, file, cb);
       } catch(err) {
-        opts.error(err);
+        renderError(err);
       }
     } else {
-      nodeSass.render(opts);
+      nodeSass.render(opts, renderCb);
     }
 
   }
